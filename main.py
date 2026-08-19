@@ -15,6 +15,33 @@ from concurrent.futures import ThreadPoolExecutor
 from config import API_KEY
 
 
+
+
+# =========================================================
+# THEME SETTINGS
+# =========================================================
+
+dark_mode = False
+
+LIGHT_THEME = {
+    "bg": "#F4F7FB",
+    "fg": "#1F2937",
+    "card": "#FFFFFF",
+    "button": "#2563EB",
+    "button_fg": "#FFFFFF",
+    "entry": "#FFFFFF",
+}
+
+DARK_THEME = {
+    "bg": "#111827",
+    "fg": "#F9FAFB",
+    "card": "#1F2937",
+    "button": "#3B82F6",
+    "button_fg": "#FFFFFF",
+    "entry": "#374151",
+}
+
+
 # =========================================================
 # SETTINGS
 # =========================================================
@@ -30,11 +57,20 @@ LIGHT = "#F5F5F5"
 MUTED = "#9AA9BD"
 WHITE = "white"
 
-# Thread pool keeps the Tkinter interface responsive
+
+# =========================================================
+# THREAD POOL
+# =========================================================
+
 executor = ThreadPoolExecutor(max_workers=8)
 
-# Reuse HTTP connections
+
+# =========================================================
+# HTTP SESSION
+# =========================================================
+
 request_session = requests.Session()
+
 request_session.headers.update({
     "User-Agent": "Smart Weather Assistant/1.0"
 })
@@ -59,9 +95,7 @@ except Exception as e:
 
 
 def speak(text):
-    """
-    Speak without freezing the Tkinter interface.
-    """
+    """Speak without freezing the Tkinter interface."""
 
     if engine is None:
         print("Text-to-speech engine is unavailable.")
@@ -91,12 +125,106 @@ root = tk.Tk()
 root.title("Smart Weather Assistant")
 root.geometry("1400x850")
 root.minsize(1100, 700)
-root.configure(bg=BG)
+
+# Start in LIGHT MODE
+root.configure(bg=LIGHT_THEME["bg"])
 
 try:
     root.state("zoomed")
 except tk.TclError:
     pass
+
+
+# =========================================================
+# DARK / LIGHT MODE
+# =========================================================
+
+def toggle_theme():
+    global dark_mode
+
+    dark_mode = not dark_mode
+
+    theme = DARK_THEME if dark_mode else LIGHT_THEME
+
+    # Change main window
+    root.configure(bg=theme["bg"])
+
+    def update_widget(widget):
+
+        try:
+            widget_class = widget.winfo_class()
+
+            # Frames
+            if widget_class in ("Frame", "Labelframe"):
+                widget.configure(
+                    bg=theme["card"]
+                )
+
+            # Labels
+            elif widget_class == "Label":
+                widget.configure(
+                    bg=theme["card"],
+                    fg=theme["fg"]
+                )
+
+            # Buttons
+            elif widget_class == "Button":
+                widget.configure(
+                    bg=theme["button"],
+                    fg=theme["button_fg"],
+                    activebackground=theme["button"],
+                    activeforeground=theme["button_fg"]
+                )
+
+            # Entry boxes
+            elif widget_class == "Entry":
+                widget.configure(
+                    bg=theme["entry"],
+                    fg=theme["fg"],
+                    insertbackground=theme["fg"]
+                )
+
+            # Text boxes
+            elif widget_class == "Text":
+                widget.configure(
+                    bg=theme["entry"],
+                    fg=theme["fg"],
+                    insertbackground=theme["fg"]
+                )
+
+        except tk.TclError:
+            pass
+
+        # Update child widgets
+        for child in widget.winfo_children():
+            update_widget(child)
+
+    update_widget(root)
+
+    # Change button text
+    if dark_mode:
+        theme_button.config(text="☀ Light Mode")
+    else:
+        theme_button.config(text="🌙 Dark Mode")
+
+
+# =========================================================
+# THEME BUTTON
+# =========================================================
+
+theme_button = tk.Button(
+    root,
+    text="🌙 Dark Mode",
+    command=toggle_theme,
+    font=("Arial", 11, "bold"),
+    padx=10,
+    pady=5
+)
+
+theme_button.pack(pady=10)
+
+
+
 
 
 # =========================================================
